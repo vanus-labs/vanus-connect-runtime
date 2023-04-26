@@ -12,7 +12,7 @@ import (
 )
 
 func (c *Controller) enqueueAddConnector(obj interface{}) {
-	if c.filterConnectors(obj.(*vanusv1alpha1.Connector)) {
+	if !c.filterConnectors(obj.(*vanusv1alpha1.Connector)) {
 		return
 	}
 	var key string
@@ -29,7 +29,7 @@ func (c *Controller) enqueueUpdateConnector(old, new interface{}) {
 
 	oldConnector := old.(*vanusv1alpha1.Connector)
 	newConnector := new.(*vanusv1alpha1.Connector)
-	if c.filterConnectors(new.(*vanusv1alpha1.Connector)) {
+	if !c.filterConnectors(new.(*vanusv1alpha1.Connector)) {
 		return
 	}
 	var key string
@@ -45,7 +45,7 @@ func (c *Controller) enqueueUpdateConnector(old, new interface{}) {
 }
 
 func (c *Controller) enqueueDeleteConnector(obj interface{}) {
-	if c.filterConnectors(obj.(*vanusv1alpha1.Connector)) {
+	if !c.filterConnectors(obj.(*vanusv1alpha1.Connector)) {
 		return
 	}
 	var key string
