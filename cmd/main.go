@@ -3,13 +3,14 @@ package main
 import (
 	"context"
 
-	"github.com/vanus-labs/vanus-connect-runtime/pkg/controller"
 	log "k8s.io/klog/v2"
+
+	"github.com/vanus-labs/vanus-connect-runtime/pkg/controller"
 )
 
 func main() {
 	ctx := context.Background()
-	c, err := controller.NewController(ctx)
+	c, err := controller.NewController(controller.FilterConnector{}, controller.ConnectorHandlerFuncs{})
 	if err != nil {
 		log.Errorf("new controller manager failed: %+v\b", err)
 		panic(err)
