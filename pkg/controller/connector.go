@@ -164,7 +164,7 @@ func (c *Controller) processNextDeleteConnectorWorkItem() bool {
 }
 
 func (c *Controller) filterConnectors(connector *vanusv1alpha1.Connector) bool {
-	return c.filterConnector.Kind == connector.Spec.Kind && c.filterConnector.Type == c.filterConnector.Type
+	return c.filterConnector.Kind == connector.Spec.Kind && c.filterConnector.Type == connector.Spec.Type
 }
 
 func (c *Controller) handleAddConnector(key string) error {
