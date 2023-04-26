@@ -19,7 +19,7 @@ import "strings"
 // GetConnectorID kind-type-id
 func (in *Connector) GetConnectorID() string {
 	arr := strings.Split(in.Name, "-")
-	if len(arr) == 2 {
+	if len(arr) >= 3 {
 		return arr[2]
 	}
 	return in.Name
