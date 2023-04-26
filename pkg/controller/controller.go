@@ -18,8 +18,6 @@ import (
 	"context"
 	"time"
 
-	vanusinformer "github.com/vanus-labs/vanus-connect-runtime/pkg/client/informers/externalversions"
-	vanuslister "github.com/vanus-labs/vanus-connect-runtime/pkg/client/listers/vanus/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -27,6 +25,9 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	log "k8s.io/klog/v2"
+
+	vanusinformer "github.com/vanus-labs/vanus-connect-runtime/pkg/client/informers/externalversions"
+	vanuslister "github.com/vanus-labs/vanus-connect-runtime/pkg/client/listers/vanus/v1alpha1"
 )
 
 var (
@@ -45,6 +46,9 @@ type Controller struct {
 	vanusInformerFactory vanusinformer.SharedInformerFactory
 
 	sharedInformers informers.SharedInformerFactory
+
+	connectorHandler ConnectorHandler
+	filterConnector  FilterConnector
 }
 
 type ResourceType string
@@ -54,7 +58,7 @@ var (
 )
 
 // NewController creates a new Controller manager
-func NewController(ctx context.Context) (*Controller, error) {
+func NewController(filter FilterConnector, handler ConnectorHandler) (*Controller, error) {
 	config, err := NewConfig()
 	if err != nil {
 		return nil, err
@@ -82,6 +86,8 @@ func NewController(ctx context.Context) (*Controller, error) {
 		informerFactory:      informerFactory,
 		vanusInformerFactory: vanusInformerFactory,
 		sharedInformers:      sharedInformers,
+		filterConnector:      filter,
+		connectorHandler:     handler,
 	}
 
 	if _, err = connectorInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
