@@ -10,7 +10,7 @@ import (
 
 func main() {
 	ctx := context.Background()
-	c, err := controller.NewController(controller.FilterConnector{}, nil)
+	c, err := controller.NewController(controller.FilterConnector{}, controller.ConnectorHandlerFuncs{})
 	if err != nil {
 		log.Errorf("new controller manager failed: %+v\b", err)
 		panic(err)
