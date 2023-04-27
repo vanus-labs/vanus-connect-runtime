@@ -29,3 +29,21 @@ docker-build:
 	docker build -t ${DOCKER_REPO}/timer:${IMAGE_TAG} $(DOCKER_BUILD_ARG) -f Dockerfile .
 build:
 	$(GO_BUILD)  -o bin/runtime cmd/main.go
+
+# install swagger binary file
+.PHONY: install-swagger
+install-swagger:
+	@go install github.com/go-swagger/go-swagger/cmd/swagger@v0.27.0
+
+# vaild swagger
+.PHONY: valid-swagger
+valid-swagger:
+	swagger validate ./api/swagger.yaml
+
+# gen swagger 
+.PHONY: gen-swagger
+gen-swagger:
+	swagger validate ./api/swagger.yaml
+	rm -rf ./api/restapi
+	rm -rf ./api/models
+	swagger generate server --target ./api --spec ./api/swagger.yaml --exclude-main  --name vanus-connect-runtime
