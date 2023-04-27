@@ -19,7 +19,9 @@ var (
 func init() {
 	SwaggerJSON = json.RawMessage([]byte(`{
   "consumes": [
-    "application/json"
+    "text/plain",
+    "application/json",
+    "application/x-www-form-urlencoded"
   ],
   "produces": [
     "application/json"
@@ -66,8 +68,7 @@ func init() {
             "in": "body",
             "required": true,
             "schema": {
-              "type": "object",
-              "$ref": "#/definitions/ChatGPT"
+              "type": "string"
             }
           }
         ],
@@ -104,16 +105,6 @@ func init() {
           "type": "object"
         },
         "message": {
-          "type": "string"
-        }
-      }
-    },
-    "ChatGPT": {
-      "description": "chatgpt message",
-      "type": "object",
-      "properties": {
-        "message": {
-          "description": "chatgpt message",
           "type": "string"
         }
       }
@@ -122,7 +113,9 @@ func init() {
 }`))
 	FlatSwaggerJSON = json.RawMessage([]byte(`{
   "consumes": [
-    "application/json"
+    "application/json",
+    "application/x-www-form-urlencoded",
+    "text/plain"
   ],
   "produces": [
     "application/json"
@@ -169,8 +162,7 @@ func init() {
             "in": "body",
             "required": true,
             "schema": {
-              "type": "object",
-              "$ref": "#/definitions/ChatGPT"
+              "type": "string"
             }
           }
         ],
@@ -207,16 +199,6 @@ func init() {
           "type": "object"
         },
         "message": {
-          "type": "string"
-        }
-      }
-    },
-    "ChatGPT": {
-      "description": "chatgpt message",
-      "type": "object",
-      "properties": {
-        "message": {
-          "description": "chatgpt message",
           "type": "string"
         }
       }

@@ -36,6 +36,8 @@ func configureAPI(api *operations.VanusConnectRuntimeAPI) http.Handler {
 	// api.UseRedoc()
 
 	api.JSONConsumer = runtime.JSONConsumer()
+	api.TxtConsumer = runtime.TextConsumer()
+	api.UrlformConsumer = runtime.DiscardConsumer
 
 	api.JSONProducer = runtime.JSONProducer()
 

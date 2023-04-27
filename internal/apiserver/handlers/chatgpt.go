@@ -29,7 +29,7 @@ func RegistChatGPTHandler(a *Api) {
 func (a *Api) chatgptHandler(params connector.ChatgptParams) middleware.Responder {
 	log.Infof("show chatgpt params, connector_id: %s, message: %s\n",
 		params.ConnectorID,
-		params.Message.Message)
+		params.Message)
 
 	// TODO(jiangkai): here is the interaction logic with chatgpt
 	// this err handler example

@@ -6,7 +6,6 @@ package connector
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
-	"context"
 	"io"
 	"net/http"
 
@@ -14,9 +13,6 @@ import (
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/runtime/middleware"
 	"github.com/go-openapi/strfmt"
-	"github.com/go-openapi/validate"
-
-	"github.com/vanus-labs/vanus-connect-runtime/api/models"
 )
 
 // NewChatgptParams creates a new ChatgptParams object
@@ -45,7 +41,7 @@ type ChatgptParams struct {
 	  Required: true
 	  In: body
 	*/
-	Message *models.ChatGPT
+	Message string
 }
 
 // BindRequest both binds and validates a request, it assumes that complex things implement a Validatable(strfmt.Registry) error interface
@@ -64,7 +60,7 @@ func (o *ChatgptParams) BindRequest(r *http.Request, route *middleware.MatchedRo
 
 	if runtime.HasBody(r) {
 		defer r.Body.Close()
-		var body models.ChatGPT
+		var body string
 		if err := route.Consumer.Consume(r.Body, &body); err != nil {
 			if err == io.EOF {
 				res = append(res, errors.Required("message", "body", ""))
@@ -72,19 +68,8 @@ func (o *ChatgptParams) BindRequest(r *http.Request, route *middleware.MatchedRo
 				res = append(res, errors.NewParseError("message", "body", "", err))
 			}
 		} else {
-			// validate body object
-			if err := body.Validate(route.Formats); err != nil {
-				res = append(res, err)
-			}
-
-			ctx := validate.WithOperationRequest(context.Background())
-			if err := body.ContextValidate(ctx, route.Formats); err != nil {
-				res = append(res, err)
-			}
-
-			if len(res) == 0 {
-				o.Message = &body
-			}
+			// no validation required on inline body
+			o.Message = body
 		}
 	} else {
 		res = append(res, errors.Required("message", "body", ""))

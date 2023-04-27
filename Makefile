@@ -24,9 +24,9 @@ clean :
 	rm -rf bin
 
 docker-push:
-	docker buildx build --platform ${DOCKER_PLATFORM} -t ${DOCKER_REPO}/connect-runtime:${IMAGE_TAG} -f build/images/timer/Dockerfile . --push
+	docker buildx build --platform ${DOCKER_PLATFORM} -t ${DOCKER_REPO}/runtime:${IMAGE_TAG} -f build/images/timer/Dockerfile . --push
 docker-build:
-	docker build -t ${DOCKER_REPO}/timer:${IMAGE_TAG} $(DOCKER_BUILD_ARG) -f Dockerfile .
+	docker build -t ${DOCKER_REPO}/runtime:${IMAGE_TAG} $(DOCKER_BUILD_ARG) -f Dockerfile .
 build:
 	$(GO_BUILD)  -o bin/runtime cmd/main.go
 

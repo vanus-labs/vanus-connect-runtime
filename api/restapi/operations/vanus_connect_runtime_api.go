@@ -41,7 +41,9 @@ func NewVanusConnectRuntimeAPI(spec *loads.Document) *VanusConnectRuntimeAPI {
 		APIKeyAuthenticator: security.APIKeyAuth,
 		BearerAuthenticator: security.BearerAuth,
 
-		JSONConsumer: runtime.JSONConsumer(),
+		JSONConsumer:    runtime.JSONConsumer(),
+		TxtConsumer:     runtime.TextConsumer(),
+		UrlformConsumer: runtime.DiscardConsumer,
 
 		JSONProducer: runtime.JSONProducer(),
 
@@ -83,6 +85,12 @@ type VanusConnectRuntimeAPI struct {
 	// JSONConsumer registers a consumer for the following mime types:
 	//   - application/json
 	JSONConsumer runtime.Consumer
+	// TxtConsumer registers a consumer for the following mime types:
+	//   - text/plain
+	TxtConsumer runtime.Consumer
+	// UrlformConsumer registers a consumer for the following mime types:
+	//   - application/x-www-form-urlencoded
+	UrlformConsumer runtime.Consumer
 
 	// JSONProducer registers a producer for the following mime types:
 	//   - application/json
@@ -164,6 +172,12 @@ func (o *VanusConnectRuntimeAPI) Validate() error {
 	if o.JSONConsumer == nil {
 		unregistered = append(unregistered, "JSONConsumer")
 	}
+	if o.TxtConsumer == nil {
+		unregistered = append(unregistered, "TxtConsumer")
+	}
+	if o.UrlformConsumer == nil {
+		unregistered = append(unregistered, "UrlformConsumer")
+	}
 
 	if o.JSONProducer == nil {
 		unregistered = append(unregistered, "JSONProducer")
@@ -206,6 +220,10 @@ func (o *VanusConnectRuntimeAPI) ConsumersFor(mediaTypes []string) map[string]ru
 		switch mt {
 		case "application/json":
 			result["application/json"] = o.JSONConsumer
+		case "text/plain":
+			result["text/plain"] = o.TxtConsumer
+		case "application/x-www-form-urlencoded":
+			result["application/x-www-form-urlencoded"] = o.UrlformConsumer
 		}
 
 		if c, ok := o.customConsumers[mt]; ok {

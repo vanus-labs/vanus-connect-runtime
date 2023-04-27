@@ -12,6 +12,8 @@
 //
 //	Consumes:
 //	  - application/json
+//	  - text/plain
+//	  - application/x-www-form-urlencoded
 //
 //	Produces:
 //	  - application/json

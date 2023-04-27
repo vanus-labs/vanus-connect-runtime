@@ -1,7 +1,9 @@
 # Copyright 2023 Linkall Inc.
 swagger: "2.0"
 consumes:
+  - text/plain
   - application/json
+  - application/x-www-form-urlencoded
 info:
   description: >
     this document describes the functions, parameters and return values of the vanus connect runtime API
@@ -28,12 +30,11 @@ paths:
       description: "source chatgpt connector request"
       operationId: "chatgpt"
       parameters:
-        - name: "message"
-          in: "body"
+        - in: body
+          name: message
           required: true
           schema:
-            type: "object"
-            $ref: "#/definitions/ChatGPT"
+            type: string
       responses:
         '200':
           description: OK
@@ -66,10 +67,10 @@ definitions:
       message:
         type: "string"
 
-  ChatGPT:
-    type: "object"
-    description: "chatgpt message"
-    properties:
-      message:
-        type: "string"
-        description: "chatgpt message"
+  # ChatGPT:
+  #   type: "object"
+  #   description: "chatgpt message"
+  #   properties:
+  #     message:
+  #       type: "string"
+  #       description: "chatgpt message"
