@@ -72,6 +72,7 @@ func NewController(filter FilterConnector, handler ConnectorHandler) (*Controlle
 	vanusInformerFactory := vanusinformer.NewSharedInformerFactoryWithOptions(config.VanusFactoryClient, 0,
 		vanusinformer.WithTweakListOptions(func(listOption *metav1.ListOptions) {
 			listOption.AllowWatchBookmarks = true
+			// listOption.LabelSelector = "kind=source,type=chatgpt"
 		}))
 
 	connectorInformer := vanusInformerFactory.Vanus().V1alpha1().Connectors()

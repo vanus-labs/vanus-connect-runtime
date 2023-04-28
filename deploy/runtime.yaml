@@ -116,3 +116,10 @@ spec:
           containerPort: 8080
         securityContext:
           allowPrivilegeEscalation: false
+        volumeMounts:
+          - name: config-runtime
+            mountPath: /vanus-connect/config
+      volumes:
+        - name: config-runtime
+          configMap:
+            name: config-runtime
