@@ -1,0 +1,118 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: vanus-connect-runtime
+rules:
+- apiGroups:
+  - vanus.ai
+  resources:
+  - connectors
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - vanus.ai
+  resources:
+  - connectors/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - vanus.ai
+  resources:
+  - connectors/spec
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - vanus.ai
+  resources:
+  - connectors/status
+  verbs:
+  - get
+  - patch
+  - update
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vanus-connect-runtime
+  namespace: vanus
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: vanus-connect-runtime
+subjects:
+- kind: ServiceAccount
+  name: vanus-connect-runtime
+  namespace: vanus
+roleRef:
+  kind: ClusterRole
+  name: vanus-connect-runtime
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vanus-connect-runtime
+  namespace: vanus
+spec:
+  selector:
+    name: vanus-connect-runtime
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 8080
+      name: proxy
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vanus-connect-runtime
+  namespace: vanus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: vanus-connect-runtime
+  template:
+    metadata:
+      labels:
+        name: vanus-connect-runtime
+    spec:
+      serviceAccountName: vanus-connect-runtime
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: runtime
+        # Replace this with the built image name
+        image: public.ecr.aws/vanus/runtime:latest
+        imagePullPolicy: Always
+        command:
+        - /vanus-connect/runtime
+        ports:
+        - name: apiserver
+          containerPort: 8080
+        securityContext:
+          allowPrivilegeEscalation: false

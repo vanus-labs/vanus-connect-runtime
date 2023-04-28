@@ -1,0 +1,76 @@
+# Copyright 2023 Linkall Inc.
+swagger: "2.0"
+consumes:
+  - text/plain
+  - application/json
+  - application/x-www-form-urlencoded
+info:
+  description: >
+    this document describes the functions, parameters and return values of the vanus connect runtime API
+  title: Vanus Connect Runtime Interface Document
+  version: v0.2.0
+produces:
+  - application/json
+schemes:
+  - http
+basePath: /api/v1
+
+paths:
+
+  /source/chatgpt/{connector_id}:
+    parameters:
+      - name: connector_id
+        in: path
+        type: string
+        required: true
+        description: "the chatgpt connector id"
+    post:
+      tags:
+        - "connector"
+      description: "source chatgpt connector request"
+      operationId: "chatgpt"
+      parameters:
+        - in: body
+          name: message
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          schema:
+            type: "object"
+            $ref: "#/definitions/APIResponse"
+
+  /healthz/:
+    get:
+      tags:
+        - "healthz"
+      description: "healthz"
+      operationId: "healthz"
+      responses:
+        '200':
+          description: OK
+          schema:
+            type: "object"
+            $ref: "#/definitions/APIResponse"
+
+definitions:
+  APIResponse:
+    type: "object"
+    properties:
+      code:
+        type: "integer"
+        format: "int32"
+      data:
+        type: "object"
+      message:
+        type: "string"
+
+  # ChatGPT:
+  #   type: "object"
+  #   description: "chatgpt message"
+  #   properties:
+  #     message:
+  #       type: "string"
+  #       description: "chatgpt message"
