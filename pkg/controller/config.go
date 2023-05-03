@@ -27,8 +27,6 @@ func NewConfig() (*Config, error) {
 	if err := config.initKubeFactoryClient(); err != nil {
 		return nil, err
 	}
-
-	klog.Infof("config is  %+v", config)
 	return config, nil
 }
 

@@ -41,12 +41,16 @@ func NewVanusConnectRuntimeAPI(spec *loads.Document) *VanusConnectRuntimeAPI {
 		APIKeyAuthenticator: security.APIKeyAuth,
 		BearerAuthenticator: security.BearerAuth,
 
+		BinConsumer:     runtime.ByteStreamConsumer(),
 		JSONConsumer:    runtime.JSONConsumer(),
 		TxtConsumer:     runtime.TextConsumer(),
 		UrlformConsumer: runtime.DiscardConsumer,
 
 		JSONProducer: runtime.JSONProducer(),
 
+		ConnectorChataiHandler: connector.ChataiHandlerFunc(func(params connector.ChataiParams) middleware.Responder {
+			return middleware.NotImplemented("operation connector.Chatai has not yet been implemented")
+		}),
 		ConnectorChatgptHandler: connector.ChatgptHandlerFunc(func(params connector.ChatgptParams) middleware.Responder {
 			return middleware.NotImplemented("operation connector.Chatgpt has not yet been implemented")
 		}),
@@ -82,6 +86,9 @@ type VanusConnectRuntimeAPI struct {
 	// It has a default implementation in the security package, however you can replace it for your particular usage.
 	BearerAuthenticator func(string, security.ScopedTokenAuthentication) runtime.Authenticator
 
+	// BinConsumer registers a consumer for the following mime types:
+	//   - application/octet-stream
+	BinConsumer runtime.Consumer
 	// JSONConsumer registers a consumer for the following mime types:
 	//   - application/json
 	JSONConsumer runtime.Consumer
@@ -96,6 +103,8 @@ type VanusConnectRuntimeAPI struct {
 	//   - application/json
 	JSONProducer runtime.Producer
 
+	// ConnectorChataiHandler sets the operation handler for the chatai operation
+	ConnectorChataiHandler connector.ChataiHandler
 	// ConnectorChatgptHandler sets the operation handler for the chatgpt operation
 	ConnectorChatgptHandler connector.ChatgptHandler
 	// HealthzHealthzHandler sets the operation handler for the healthz operation
@@ -169,6 +178,9 @@ func (o *VanusConnectRuntimeAPI) RegisterFormat(name string, format strfmt.Forma
 func (o *VanusConnectRuntimeAPI) Validate() error {
 	var unregistered []string
 
+	if o.BinConsumer == nil {
+		unregistered = append(unregistered, "BinConsumer")
+	}
 	if o.JSONConsumer == nil {
 		unregistered = append(unregistered, "JSONConsumer")
 	}
@@ -183,6 +195,9 @@ func (o *VanusConnectRuntimeAPI) Validate() error {
 		unregistered = append(unregistered, "JSONProducer")
 	}
 
+	if o.ConnectorChataiHandler == nil {
+		unregistered = append(unregistered, "connector.ChataiHandler")
+	}
 	if o.ConnectorChatgptHandler == nil {
 		unregistered = append(unregistered, "connector.ChatgptHandler")
 	}
@@ -218,6 +233,8 @@ func (o *VanusConnectRuntimeAPI) ConsumersFor(mediaTypes []string) map[string]ru
 	result := make(map[string]runtime.Consumer, len(mediaTypes))
 	for _, mt := range mediaTypes {
 		switch mt {
+		case "application/octet-stream":
+			result["application/octet-stream"] = o.BinConsumer
 		case "application/json":
 			result["application/json"] = o.JSONConsumer
 		case "text/plain":
@@ -281,6 +298,10 @@ func (o *VanusConnectRuntimeAPI) initHandlerCache() {
 		o.handlers = make(map[string]map[string]http.Handler)
 	}
 
+	if o.handlers["POST"] == nil {
+		o.handlers["POST"] = make(map[string]http.Handler)
+	}
+	o.handlers["POST"]["/source/chatai/{connector_id}"] = connector.NewChatai(o.context, o.ConnectorChataiHandler)
 	if o.handlers["POST"] == nil {
 		o.handlers["POST"] = make(map[string]http.Handler)
 	}

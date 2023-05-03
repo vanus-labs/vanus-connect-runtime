@@ -21,6 +21,7 @@ func init() {
   "consumes": [
     "text/plain",
     "application/json",
+    "application/octet-stream",
     "application/x-www-form-urlencoded"
   ],
   "produces": [
@@ -54,6 +55,43 @@ func init() {
           }
         }
       }
+    },
+    "/source/chatai/{connector_id}": {
+      "post": {
+        "description": "source chatai connector request",
+        "tags": [
+          "connector"
+        ],
+        "operationId": "chatai",
+        "parameters": [
+          {
+            "name": "message",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/APIResponse"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "description": "the chatai connector id",
+          "name": "connector_id",
+          "in": "path",
+          "required": true
+        }
+      ]
     },
     "/source/chatgpt/{connector_id}": {
       "post": {
@@ -114,6 +152,7 @@ func init() {
 	FlatSwaggerJSON = json.RawMessage([]byte(`{
   "consumes": [
     "application/json",
+    "application/octet-stream",
     "application/x-www-form-urlencoded",
     "text/plain"
   ],
@@ -148,6 +187,43 @@ func init() {
           }
         }
       }
+    },
+    "/source/chatai/{connector_id}": {
+      "post": {
+        "description": "source chatai connector request",
+        "tags": [
+          "connector"
+        ],
+        "operationId": "chatai",
+        "parameters": [
+          {
+            "name": "message",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "object",
+              "$ref": "#/definitions/APIResponse"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "description": "the chatai connector id",
+          "name": "connector_id",
+          "in": "path",
+          "required": true
+        }
+      ]
     },
     "/source/chatgpt/{connector_id}": {
       "post": {

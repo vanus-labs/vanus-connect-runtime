@@ -41,22 +41,14 @@ func RegistChatGPTHandler(a *Api) {
 }
 
 func (a *Api) chatgptHandler(params connector.ChatgptParams) middleware.Responder {
-	log.Infof("show chatgpt params, connector_id: %s, message: %s\n",
-		params.ConnectorID,
-		params.Message)
-
-	a.config.Connectors.Range(func(key, value any) bool {
-		log.Infof("cache, key: %s, value: %s\n", key, value)
-		return true
-	})
-
-	connectorCfg, ok := a.config.Connectors.Load(params.ConnectorID)
-	if !ok {
-		log.Warningf("connector not found: %s\n", params.ConnectorID)
-		return utils.Response(404, fmt.Errorf("connector not found: %s", params.ConnectorID))
+	c, err := a.ctrl().ControllersLister().Get(NamespaceKey(ConnectorKindSource, ConnectorTypeChatGPT, params.ConnectorID))
+	if err != nil {
+		log.Warningf("failed to get connector: %s\n", params.ConnectorID)
+		return utils.Response(500, err)
 	}
+
 	chatgptConfig := &chatGPTConfig{}
-	err := yaml.Unmarshal([]byte(connectorCfg.(string)), chatgptConfig)
+	err = yaml.Unmarshal([]byte(c.Spec.Config), chatgptConfig)
 	if err != nil {
 		return utils.Response(500, err)
 	}
@@ -68,29 +60,7 @@ func (a *Api) chatgptHandler(params connector.ChatgptParams) middleware.Responde
 	if eventType == "" {
 		eventType = defaultEventType
 	}
-	event := ce.NewEvent()
-	event.SetID(uuid.New().String())
-	event.SetTime(time.Now())
-	event.SetType(eventType)
-	event.SetSource(eventSource)
-	if ChatGPTServer == nil {
-		ChatGPTServer = newChatGPTService(&chatGPTConfig{
-			Port:          a.config.Port,
-			Token:         a.config.OpenAIAPIKey,
-			EverydayLimit: 100,
-			MaxTokens:     3500,
-		})
-	}
-	content, err := ChatGPTServer.CreateChatCompletion(params.Message)
-	if err != nil {
-		log.Warningf("failed to get content from ChatGPT: %+v\n", err)
-	}
 
-	log.Infof("get content from ChatGPT success, content: %s\n", content)
-
-	event.SetData(ce.ApplicationJSON, map[string]string{
-		"content": content,
-	})
 	// parse config
 	u, err := url.Parse(chatgptConfig.Target)
 	if err != nil {
@@ -100,6 +70,7 @@ func (a *Api) chatgptHandler(params connector.ChatgptParams) middleware.Responde
 	if Client == nil {
 		// use sdk publish event
 		opts := &sdkgo.ClientOptions{
+			// TODO(jiangkai): use target host
 			Endpoint: "vanus-gateway.vanus:8080",
 			Token:    "admin",
 		}
@@ -111,18 +82,40 @@ func (a *Api) chatgptHandler(params connector.ChatgptParams) middleware.Responde
 		}
 	}
 	subPaths := strings.Split(u.Path, "/")
-	log.Infof("new publisher, namespace: %s, eventbus name: %s\n", subPaths[2], subPaths[4])
 	p := Client.Publisher(sdkgo.WithEventbus(subPaths[2], subPaths[4]))
-	go func(event ce.Event) {
+	go func(params connector.ChatgptParams) {
+		event := ce.NewEvent()
+		event.SetID(uuid.New().String())
+		event.SetTime(time.Now())
+		event.SetType(eventType)
+		event.SetSource(eventSource)
+		if ChatGPTServer == nil {
+			ChatGPTServer = newChatGPTService(&chatGPTConfig{
+				Port:          a.config.Port,
+				Token:         a.config.OpenAIAPIKey,
+				EverydayLimit: 100,
+				MaxTokens:     3500,
+			})
+		}
+		content, err := ChatGPTServer.CreateChatCompletion(params.Message)
+		if err != nil {
+			log.Warningf("failed to get content from ChatGPT: %+v\n", err)
+		}
+
+		log.Infof("get content from ChatGPT success, content: %s\n", content)
+
+		event.SetData(ce.ApplicationJSON, map[string]string{
+			"content": content,
+		})
 		err = p.Publish(context.Background(), &event)
 		if err != nil {
 			log.Errorf("publish event failed, err: %s\n", err.Error())
 			return
 		}
-	}(event)
+	}(params)
 	return connector.NewChatgptOK().WithPayload(&models.APIResponse{
 		Code:    200,
-		Message: "this is chatgpt answer",
+		Message: "success",
 	})
 }
 

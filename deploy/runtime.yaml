@@ -109,8 +109,6 @@ spec:
         # Replace this with the built image name
         image: public.ecr.aws/vanus/runtime:latest
         imagePullPolicy: Always
-        command:
-        - /vanus-connect/runtime
         ports:
         - name: apiserver
           containerPort: 8080
@@ -118,7 +116,7 @@ spec:
           allowPrivilegeEscalation: false
         volumeMounts:
           - name: config-runtime
-            mountPath: /vanus-connect/config
+            mountPath: /vanus-connect-runtime/config
       volumes:
         - name: config-runtime
           configMap:

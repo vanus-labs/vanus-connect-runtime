@@ -12,9 +12,6 @@ import (
 )
 
 func (c *Controller) enqueueAddConnector(obj interface{}) {
-	if !c.filterConnectors(obj.(*vanusv1alpha1.Connector)) {
-		return
-	}
 	var key string
 	var err error
 	if key, err = cache.MetaNamespaceKeyFunc(obj); err != nil {
@@ -26,9 +23,6 @@ func (c *Controller) enqueueAddConnector(obj interface{}) {
 }
 
 func (c *Controller) enqueueUpdateConnector(old, new interface{}) {
-	if !c.filterConnectors(new.(*vanusv1alpha1.Connector)) {
-		return
-	}
 	oldKey, err := cache.MetaNamespaceKeyFunc(new)
 	if err != nil {
 		utilruntime.HandleError(err)
@@ -46,9 +40,6 @@ func (c *Controller) enqueueUpdateConnector(old, new interface{}) {
 }
 
 func (c *Controller) enqueueDeleteConnector(obj interface{}) {
-	if !c.filterConnectors(obj.(*vanusv1alpha1.Connector)) {
-		return
-	}
 	var key string
 	var err error
 	if key, err = cache.MetaNamespaceKeyFunc(obj); err != nil {
@@ -164,10 +155,6 @@ func (c *Controller) processNextDeleteConnectorWorkItem() bool {
 	return true
 }
 
-func (c *Controller) filterConnectors(connector *vanusv1alpha1.Connector) bool {
-	return c.filterConnector.Kind == connector.Spec.Kind && c.filterConnector.Type == connector.Spec.Type
-}
-
 func (c *Controller) handleAddConnector(key string) error {
 	var err error
 	cachedConnector, err := c.connectorsLister.Get(key)
@@ -178,11 +165,6 @@ func (c *Controller) handleAddConnector(key string) error {
 		return err
 	}
 	log.Infof("handle add connector %s", cachedConnector.Name)
-	err = c.connectorHandler.OnAdd(cachedConnector.GetConnectorID(), cachedConnector.Spec.Config)
-	if err != nil {
-		log.Infof("handle add connector %s failed %v", cachedConnector.Name, err)
-		return err
-	}
 	return nil
 }
 
@@ -196,20 +178,10 @@ func (c *Controller) handleUpdateConnector(key string) error {
 		return err
 	}
 	log.Infof("handle update connector %s", cachedConnector.Name)
-	err = c.connectorHandler.OnUpdate(cachedConnector.GetConnectorID(), cachedConnector.Spec.Config)
-	if err != nil {
-		log.Infof("handle update connector %s failed %v", cachedConnector.Name, err)
-		return err
-	}
 	return nil
 }
 
 func (c *Controller) handleDeleteConnector(connector *vanusv1alpha1.Connector) error {
 	log.Infof("handle delete connector %s", connector.Name)
-	err := c.connectorHandler.OnDelete(connector.GetConnectorID())
-	if err != nil {
-		log.Infof("handle delete connector %s failed %v", connector.Name, err)
-		return err
-	}
 	return nil
 }

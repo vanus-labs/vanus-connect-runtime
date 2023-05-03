@@ -18,7 +18,6 @@ import (
 	"context"
 	"flag"
 	"path/filepath"
-	"sync"
 
 	"github.com/gin-gonic/gin"
 	"github.com/vanus-labs/vanus-connect-runtime/internal/apiserver/handlers"
@@ -33,11 +32,19 @@ func main() {
 	configPath := flag.String("config", "./config/runtime.yaml", "the configuration file of runtime")
 	log.InitFlags(flag.CommandLine)
 
+	ctx := context.Background()
 	cfg, err := handlers.InitConfig(*configPath)
 	if err != nil {
 		panic(err)
 	}
-	cfg.Connectors = &sync.Map{}
+
+	ctrl, err := controller.NewController()
+	if err != nil {
+		log.Errorf("new controller manager failed: %+v\b", err)
+		panic(err)
+	}
+	go ctrl.Run(ctx)
+	cfg.Ctrl = ctrl
 
 	flag.Parse()
 	bpath := filepath.Clean(*basepath)
@@ -55,32 +62,6 @@ func main() {
 	engine.NoMethod(func(c *gin.Context) {
 		a.Handler().ServeHTTP(c.Writer, c.Request)
 	})
-
-	ctx := context.Background()
-	filterConnector := controller.FilterConnector{
-		Kind: "source",
-		Type: "chatgpt",
-	}
-	connectorHandlerFuncs := controller.ConnectorHandlerFuncs{
-		AddFunc: func(connectorID, config string) error {
-			cfg.Connectors.Store(connectorID, config)
-			return nil
-		},
-		UpdateFunc: func(connectorID, config string) error {
-			cfg.Connectors.Store(connectorID, config)
-			return nil
-		},
-		DeleteFunc: func(connectorID string) error {
-			cfg.Connectors.Delete(connectorID)
-			return nil
-		},
-	}
-	c, err := controller.NewController(filterConnector, connectorHandlerFuncs)
-	if err != nil {
-		log.Errorf("new controller manager failed: %+v\b", err)
-		panic(err)
-	}
-	go c.Run(ctx)
 
 	err = engine.Run(*addr)
 	if err != nil {

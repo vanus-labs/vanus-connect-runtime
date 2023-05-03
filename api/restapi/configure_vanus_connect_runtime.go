@@ -35,12 +35,18 @@ func configureAPI(api *operations.VanusConnectRuntimeAPI) http.Handler {
 	// To continue using redoc as your UI, uncomment the following line
 	// api.UseRedoc()
 
+	api.BinConsumer = runtime.ByteStreamConsumer()
 	api.JSONConsumer = runtime.JSONConsumer()
 	api.TxtConsumer = runtime.TextConsumer()
 	api.UrlformConsumer = runtime.DiscardConsumer
 
 	api.JSONProducer = runtime.JSONProducer()
 
+	if api.ConnectorChataiHandler == nil {
+		api.ConnectorChataiHandler = connector.ChataiHandlerFunc(func(params connector.ChataiParams) middleware.Responder {
+			return middleware.NotImplemented("operation connector.Chatai has not yet been implemented")
+		})
+	}
 	if api.ConnectorChatgptHandler == nil {
 		api.ConnectorChatgptHandler = connector.ChatgptHandlerFunc(func(params connector.ChatgptParams) middleware.Responder {
 			return middleware.NotImplemented("operation connector.Chatgpt has not yet been implemented")

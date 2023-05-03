@@ -21,6 +21,7 @@ import (
 
 	"github.com/vanus-labs/vanus-connect-runtime/api/restapi"
 	"github.com/vanus-labs/vanus-connect-runtime/api/restapi/operations"
+	"github.com/vanus-labs/vanus-connect-runtime/pkg/controller"
 
 	"github.com/go-openapi/loads"
 	"github.com/go-openapi/runtime/middleware"
@@ -79,4 +80,8 @@ func (a *Api) BasePath() string {
 
 func (a *Api) Handler() http.Handler {
 	return a.VanusConnectRuntimeAPI.Serve(nil)
+}
+
+func (a *Api) ctrl() *controller.Controller {
+	return a.config.Ctrl
 }

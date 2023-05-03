@@ -2,15 +2,16 @@ package handlers
 
 import (
 	"os"
-	"sync"
 
 	"gopkg.in/yaml.v2"
+
+	"github.com/vanus-labs/vanus-connect-runtime/pkg/controller"
 )
 
 type Config struct {
 	Port         int    `yaml:"port"`
 	OpenAIAPIKey string `yaml:"openai_api_key"`
-	Connectors   *sync.Map
+	Ctrl         *controller.Controller
 }
 
 func LoadConfig(filename string, config interface{}) error {
