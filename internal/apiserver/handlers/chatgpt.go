@@ -54,11 +54,11 @@ func (a *Api) chatgptHandler(params connector.ChatgptParams) middleware.Responde
 	}
 	eventSource := params.HTTPRequest.Header.Get(headerSource)
 	if eventSource == "" {
-		eventSource = defaultEventSource
+		eventSource = defaultChatGPTEventSource
 	}
 	eventType := params.HTTPRequest.Header.Get(headerType)
 	if eventType == "" {
-		eventType = defaultEventType
+		eventType = defaultChatGPTEventType
 	}
 
 	// parse config
@@ -67,7 +67,7 @@ func (a *Api) chatgptHandler(params connector.ChatgptParams) middleware.Responde
 		log.Errorf("failed to parse target, connector_id: %s, err: %+v\n", params.ConnectorID, err)
 		return utils.Response(500, err)
 	}
-	if Client == nil {
+	if ChatGPTClient == nil {
 		// use sdk publish event
 		opts := &sdkgo.ClientOptions{
 			// TODO(jiangkai): use target host
@@ -75,14 +75,14 @@ func (a *Api) chatgptHandler(params connector.ChatgptParams) middleware.Responde
 			Token:    "admin",
 		}
 
-		Client, err = sdkgo.Connect(opts)
+		ChatGPTClient, err = sdkgo.Connect(opts)
 		if err != nil {
 			log.Errorf("failed to connect to Vanus cluster, err: %+v\n", err)
 			return utils.Response(500, err)
 		}
 	}
 	subPaths := strings.Split(u.Path, "/")
-	p := Client.Publisher(sdkgo.WithEventbus(subPaths[2], subPaths[4]))
+	p := ChatGPTClient.Publisher(sdkgo.WithEventbus(subPaths[2], subPaths[4]))
 	go func(params connector.ChatgptParams) {
 		event := ce.NewEvent()
 		event.SetID(uuid.New().String())
@@ -93,7 +93,7 @@ func (a *Api) chatgptHandler(params connector.ChatgptParams) middleware.Responde
 			ChatGPTServer = newChatGPTService(&chatGPTConfig{
 				Port:          a.config.Port,
 				Token:         a.config.OpenAIAPIKey,
-				EverydayLimit: 100,
+				EverydayLimit: 1000,
 				MaxTokens:     3500,
 			})
 		}
@@ -128,20 +128,13 @@ type chatGPTConfig struct {
 }
 
 const (
-	defaultEventType   = "vanus-chatGPT-type"
-	defaultEventSource = "vanus-chatGPT-source"
-	headerSource       = "vanus-source"
-	headerType         = "vanus-type"
-)
-
-const (
-	responseEmpty = "Get response empty."
-	responseErr   = "Get response failed."
+	defaultChatGPTEventType   = "vanus-chatGPT-type"
+	defaultChatGPTEventSource = "vanus-chatGPT-source"
 )
 
 var (
 	ChatGPTServer *chatGPTService
-	Client        sdkgo.Client
+	ChatGPTClient sdkgo.Client
 	ErrLimit      = fmt.Errorf("reached the daily limit")
 )
 
@@ -162,10 +155,6 @@ func newChatGPTService(config *chatGPTConfig) *chatGPTService {
 		day:          today(),
 		limitContent: fmt.Sprintf("You've reached the daily limit (%d/day). Your quota will be restored tomorrow.", config.EverydayLimit),
 	}
-}
-
-func today() int {
-	return time.Now().UTC().Day()
 }
 
 func (s *chatGPTService) reset() {

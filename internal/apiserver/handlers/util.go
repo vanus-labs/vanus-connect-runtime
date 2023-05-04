@@ -14,7 +14,20 @@
 
 package handlers
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
+
+const (
+	headerSource = "vanus-source"
+	headerType   = "vanus-type"
+)
+
+const (
+	responseEmpty = "Get response empty."
+	responseErr   = "Get response failed."
+)
 
 const (
 	ConnectorKindSource string = "source"
@@ -26,4 +39,8 @@ const (
 
 func NamespaceKey(kind, ctype, id string) string {
 	return fmt.Sprintf("vanus/%s-%s-%s", kind, ctype, id)
+}
+
+func today() int {
+	return time.Now().UTC().Day()
 }
