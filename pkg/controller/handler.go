@@ -14,6 +14,8 @@
 
 package controller
 
+// TODO(jiangkai): delete this file
+
 type FilterConnector struct {
 	Kind string
 	Type string

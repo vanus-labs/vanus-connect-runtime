@@ -30,25 +30,17 @@ import (
 	vanuslister "github.com/vanus-labs/vanus-connect-runtime/pkg/client/listers/vanus/v1alpha1"
 )
 
-var (
-	defaultControllerWorker int = 1
-)
-
 type Controller struct {
 	connectorsLister     vanuslister.ConnectorLister
 	connectorSynced      cache.InformerSynced
 	addConnectorQueue    workqueue.RateLimitingInterface
 	updateConnectorQueue workqueue.RateLimitingInterface
 	deleteConnectorQueue workqueue.RateLimitingInterface
-	// connectorStatusKeyMutex *keymutex.KeyMutex
 
 	informerFactory      informers.SharedInformerFactory
 	vanusInformerFactory vanusinformer.SharedInformerFactory
 
 	sharedInformers informers.SharedInformerFactory
-
-	connectorHandler ConnectorHandler
-	filterConnector  FilterConnector
 }
 
 type ResourceType string
@@ -58,7 +50,7 @@ var (
 )
 
 // NewController creates a new Controller manager
-func NewController(filter FilterConnector, handler ConnectorHandler) (*Controller, error) {
+func NewController() (*Controller, error) {
 	config, err := NewConfig()
 	if err != nil {
 		return nil, err
@@ -86,18 +78,16 @@ func NewController(filter FilterConnector, handler ConnectorHandler) (*Controlle
 		informerFactory:      informerFactory,
 		vanusInformerFactory: vanusInformerFactory,
 		sharedInformers:      sharedInformers,
-		filterConnector:      filter,
-		connectorHandler:     handler,
 	}
 
-	if _, err = connectorInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    controller.enqueueAddConnector,
-		UpdateFunc: controller.enqueueUpdateConnector,
-		DeleteFunc: controller.enqueueDeleteConnector,
-	}); err != nil {
-		log.Errorf("failed to add connector event handler: %+v\n", err)
-		return nil, err
-	}
+	// if _, err = connectorInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	// 	AddFunc:    controller.enqueueAddConnector,
+	// 	UpdateFunc: controller.enqueueUpdateConnector,
+	// 	DeleteFunc: controller.enqueueDeleteConnector,
+	// }); err != nil {
+	// 	log.Errorf("failed to add connector event handler: %+v\n", err)
+	// 	return nil, err
+	// }
 
 	return controller, nil
 }
@@ -123,10 +113,14 @@ func (c *Controller) Run(ctx context.Context) {
 		log.Fatal("failed to wait for caches to sync")
 	}
 
-	// start workers to do all the network operations
+	// start workers to do all the connectors operations
 	c.startWorkers(ctx)
 	<-ctx.Done()
 	log.Info("Shutting down workers")
+}
+
+func (c *Controller) ControllersLister() vanuslister.ConnectorLister {
+	return c.connectorsLister
 }
 
 func (c *Controller) startWorkers(ctx context.Context) {

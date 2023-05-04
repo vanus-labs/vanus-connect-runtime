@@ -21,6 +21,7 @@ import (
 
 	"github.com/vanus-labs/vanus-connect-runtime/api/restapi"
 	"github.com/vanus-labs/vanus-connect-runtime/api/restapi/operations"
+	"github.com/vanus-labs/vanus-connect-runtime/pkg/controller"
 
 	"github.com/go-openapi/loads"
 	"github.com/go-openapi/runtime/middleware"
@@ -32,9 +33,10 @@ type Api struct {
 	*operations.VanusConnectRuntimeAPI
 	basepath string
 	ctx      context.Context
+	config   *Config
 }
 
-func NewApi(basepath string) (*Api, error) {
+func NewApi(basepath string, cfg *Config) (*Api, error) {
 	// Load embedded swagger file.
 	swaggerSpec, err := loads.Analyzed(restapi.SwaggerJSON, "")
 	if err != nil {
@@ -64,6 +66,7 @@ func NewApi(basepath string) (*Api, error) {
 		VanusConnectRuntimeAPI: openAPI,
 		basepath:               swaggerSpec.Spec().BasePath,
 		ctx:                    context.Background(),
+		config:                 cfg,
 	}
 
 	RegistChatGPTHandler(api)
@@ -77,4 +80,8 @@ func (a *Api) BasePath() string {
 
 func (a *Api) Handler() http.Handler {
 	return a.VanusConnectRuntimeAPI.Serve(nil)
+}
+
+func (a *Api) ctrl() *controller.Controller {
+	return a.config.Ctrl
 }

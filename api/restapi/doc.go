@@ -11,6 +11,7 @@
 //	Version: v0.2.0
 //
 //	Consumes:
+//	  - application/octet-stream
 //	  - application/json
 //	  - text/plain
 //	  - application/x-www-form-urlencoded

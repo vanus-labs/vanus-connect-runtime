@@ -12,15 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v1alpha1
+package handlers
 
-import "strings"
+import "fmt"
 
-// GetConnectorID kind-type-id
-func (in *Connector) GetConnectorID() string {
-	arr := strings.Split(in.Name, "-")
-	if len(arr) >= 3 {
-		return arr[2]
-	}
-	return in.Name
+const (
+	ConnectorKindSource string = "source"
+	ConnectorKindSink   string = "sink"
+
+	ConnectorTypeChatGPT string = "chatgpt"
+	ConnectorTypeChatAI  string = "chatai"
+)
+
+func NamespaceKey(kind, ctype, id string) string {
+	return fmt.Sprintf("vanus/%s-%s-%s", kind, ctype, id)
 }

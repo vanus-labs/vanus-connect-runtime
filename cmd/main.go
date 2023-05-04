@@ -29,13 +29,28 @@ func main() {
 	//address options
 	addr := flag.String("addr", ":8080", "listen address")
 	basepath := flag.String("baseurl", "/api/v1", "base url prefix")
+	configPath := flag.String("config", "./config/runtime.yaml", "the configuration file of runtime")
 	log.InitFlags(flag.CommandLine)
+
+	ctx := context.Background()
+	cfg, err := handlers.InitConfig(*configPath)
+	if err != nil {
+		panic(err)
+	}
+
+	ctrl, err := controller.NewController()
+	if err != nil {
+		log.Errorf("new controller manager failed: %+v\b", err)
+		panic(err)
+	}
+	go ctrl.Run(ctx)
+	cfg.Ctrl = ctrl
 
 	flag.Parse()
 	bpath := filepath.Clean(*basepath)
 	log.Infof("baseurl is: %v", bpath)
 	//api init, include wrap handler
-	a, err := handlers.NewApi(bpath)
+	a, err := handlers.NewApi(bpath, cfg)
 	if err != nil {
 		panic(err)
 	}
@@ -47,14 +62,6 @@ func main() {
 	engine.NoMethod(func(c *gin.Context) {
 		a.Handler().ServeHTTP(c.Writer, c.Request)
 	})
-
-	ctx := context.Background()
-	c, err := controller.NewController(controller.FilterConnector{}, controller.ConnectorHandlerFuncs{})
-	if err != nil {
-		log.Errorf("new controller manager failed: %+v\b", err)
-		panic(err)
-	}
-	go c.Run(ctx)
 
 	err = engine.Run(*addr)
 	if err != nil {
