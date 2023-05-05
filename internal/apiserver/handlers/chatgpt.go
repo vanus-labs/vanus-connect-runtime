@@ -93,7 +93,7 @@ func (a *Api) chatgptHandler(params connector.ChatgptParams) middleware.Responde
 			ChatGPTServer = newChatGPTService(&chatGPTConfig{
 				Port:          a.config.Port,
 				Token:         a.config.OpenAIAPIKey,
-				EverydayLimit: 100,
+				EverydayLimit: 1000,
 				MaxTokens:     3500,
 			})
 		}

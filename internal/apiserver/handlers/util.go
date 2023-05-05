@@ -21,7 +21,6 @@ const (
 	ConnectorKindSink   string = "sink"
 
 	ConnectorTypeChatGPT string = "chatgpt"
-	ConnectorTypeChatAI  string = "chatai"
 )
 
 func NamespaceKey(kind, ctype, id string) string {

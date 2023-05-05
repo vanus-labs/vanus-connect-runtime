@@ -42,11 +42,6 @@ func configureAPI(api *operations.VanusConnectRuntimeAPI) http.Handler {
 
 	api.JSONProducer = runtime.JSONProducer()
 
-	if api.ConnectorChataiHandler == nil {
-		api.ConnectorChataiHandler = connector.ChataiHandlerFunc(func(params connector.ChataiParams) middleware.Responder {
-			return middleware.NotImplemented("operation connector.Chatai has not yet been implemented")
-		})
-	}
 	if api.ConnectorChatgptHandler == nil {
 		api.ConnectorChatgptHandler = connector.ChatgptHandlerFunc(func(params connector.ChatgptParams) middleware.Responder {
 			return middleware.NotImplemented("operation connector.Chatgpt has not yet been implemented")

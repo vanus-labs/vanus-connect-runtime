@@ -81,7 +81,7 @@ metadata:
 spec:
   selector:
     name: vanus-connect-runtime
-  type: LoadBalancer
+  type: ClusterIP
   ports:
     - port: 80
       targetPort: 8080

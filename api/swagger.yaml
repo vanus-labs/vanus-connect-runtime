@@ -43,31 +43,6 @@ paths:
             type: "object"
             $ref: "#/definitions/APIResponse"
 
-  /source/chatai/{connector_id}:
-    parameters:
-      - name: connector_id
-        in: path
-        type: string
-        required: true
-        description: "the chatai connector id"
-    post:
-      tags:
-        - "connector"
-      description: "source chatai connector request"
-      operationId: "chatai"
-      parameters:
-        - in: body
-          name: message
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: OK
-          schema:
-            type: "object"
-            $ref: "#/definitions/APIResponse"
-
   /healthz/:
     get:
       tags:
