@@ -11,7 +11,7 @@ import (
 	vanusv1alpha1 "github.com/vanus-labs/vanus-connect-runtime/pkg/apis/vanus/v1alpha1"
 )
 
-func (c *Controller) enqueueAddConnector(obj interface{}) {
+func (c *controller) enqueueAddConnector(obj interface{}) {
 	var key string
 	var err error
 	if key, err = cache.MetaNamespaceKeyFunc(obj); err != nil {
@@ -22,7 +22,7 @@ func (c *Controller) enqueueAddConnector(obj interface{}) {
 	c.addConnectorQueue.Add(key)
 }
 
-func (c *Controller) enqueueUpdateConnector(old, new interface{}) {
+func (c *controller) enqueueUpdateConnector(old, new interface{}) {
 	oldKey, err := cache.MetaNamespaceKeyFunc(new)
 	if err != nil {
 		utilruntime.HandleError(err)
@@ -39,7 +39,7 @@ func (c *Controller) enqueueUpdateConnector(old, new interface{}) {
 	c.updateConnectorQueue.Add(newKey)
 }
 
-func (c *Controller) enqueueDeleteConnector(obj interface{}) {
+func (c *controller) enqueueDeleteConnector(obj interface{}) {
 	var key string
 	var err error
 	if key, err = cache.MetaNamespaceKeyFunc(obj); err != nil {
@@ -50,22 +50,22 @@ func (c *Controller) enqueueDeleteConnector(obj interface{}) {
 	c.deleteConnectorQueue.Add(obj)
 }
 
-func (c *Controller) runAddConnectorWorker() {
+func (c *controller) runAddConnectorWorker() {
 	for c.processNextAddConnectorWorkItem() {
 	}
 }
 
-func (c *Controller) runUpdateConnectorWorker() {
+func (c *controller) runUpdateConnectorWorker() {
 	for c.processNextUpdateConnectorWorkItem() {
 	}
 }
 
-func (c *Controller) runDeleteConnectorWorker() {
+func (c *controller) runDeleteConnectorWorker() {
 	for c.processNextDeleteConnectorWorkItem() {
 	}
 }
 
-func (c *Controller) processNextAddConnectorWorkItem() bool {
+func (c *controller) processNextAddConnectorWorkItem() bool {
 	obj, shutdown := c.addConnectorQueue.Get()
 	if shutdown {
 		return false
@@ -95,7 +95,7 @@ func (c *Controller) processNextAddConnectorWorkItem() bool {
 	return true
 }
 
-func (c *Controller) processNextUpdateConnectorWorkItem() bool {
+func (c *controller) processNextUpdateConnectorWorkItem() bool {
 	obj, shutdown := c.updateConnectorQueue.Get()
 	if shutdown {
 		return false
@@ -125,7 +125,7 @@ func (c *Controller) processNextUpdateConnectorWorkItem() bool {
 	return true
 }
 
-func (c *Controller) processNextDeleteConnectorWorkItem() bool {
+func (c *controller) processNextDeleteConnectorWorkItem() bool {
 	obj, shutdown := c.deleteConnectorQueue.Get()
 	if shutdown {
 		return false
@@ -155,7 +155,7 @@ func (c *Controller) processNextDeleteConnectorWorkItem() bool {
 	return true
 }
 
-func (c *Controller) handleAddConnector(key string) error {
+func (c *controller) handleAddConnector(key string) error {
 	var err error
 	cachedConnector, err := c.connectorsLister.Get(key)
 	if err != nil {
@@ -165,10 +165,15 @@ func (c *Controller) handleAddConnector(key string) error {
 		return err
 	}
 	log.Infof("handle add connector %s", cachedConnector.Name)
+	err = c.handler.OnAdd(cachedConnector.Name, cachedConnector.Spec.Config)
+	if err != nil {
+		log.Errorf("handle add connector %s failed: %+v", cachedConnector.Name, err)
+		return err
+	}
 	return nil
 }
 
-func (c *Controller) handleUpdateConnector(key string) error {
+func (c *controller) handleUpdateConnector(key string) error {
 	var err error
 	cachedConnector, err := c.connectorsLister.Get(key)
 	if err != nil {
@@ -178,10 +183,20 @@ func (c *Controller) handleUpdateConnector(key string) error {
 		return err
 	}
 	log.Infof("handle update connector %s", cachedConnector.Name)
+	err = c.handler.OnUpdate(cachedConnector.Name, cachedConnector.Spec.Config)
+	if err != nil {
+		log.Errorf("handle update connector %s failed: %+v", cachedConnector.Name, err)
+		return err
+	}
 	return nil
 }
 
-func (c *Controller) handleDeleteConnector(connector *vanusv1alpha1.Connector) error {
+func (c *controller) handleDeleteConnector(connector *vanusv1alpha1.Connector) error {
 	log.Infof("handle delete connector %s", connector.Name)
+	err := c.handler.OnDelete(connector.Name)
+	if err != nil {
+		log.Errorf("handle delete connector %s failed: %+v", connector.Name, err)
+		return err
+	}
 	return nil
 }

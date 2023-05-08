@@ -27,6 +27,7 @@ docker-push:
 	docker buildx build --platform ${DOCKER_PLATFORM} -t ${DOCKER_REPO}/runtime:${IMAGE_TAG} -f build/images/timer/Dockerfile . --push
 docker-build:
 	docker build -t ${DOCKER_REPO}/runtime:${IMAGE_TAG} $(DOCKER_BUILD_ARG) -f Dockerfile .
+	docker build -t myruntime:latest --build-arg TARGETARCH=amd64 --build-arg TARGETOS=linux -f Dockerfile .
 build:
 	$(GO_BUILD)  -o bin/runtime cmd/main.go
 

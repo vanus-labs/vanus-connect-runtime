@@ -21,20 +21,20 @@ type FilterConnector struct {
 	Type string
 }
 
-type ConnectorHandler interface {
+type ConnectorEventHandler interface {
 	OnAdd(connectorID, config string) error
 	OnUpdate(connectorID, config string) error
 	OnDelete(connectorID string) error
 }
 
-type ConnectorHandlerFuncs struct {
+type ConnectorEventHandlerFuncs struct {
 	AddFunc    func(connectorID, config string) error
 	UpdateFunc func(connectorID, config string) error
 	DeleteFunc func(connectorID string) error
 }
 
 // OnAdd calls AddFunc if it's not nil.
-func (r ConnectorHandlerFuncs) OnAdd(connectorID, config string) error {
+func (r ConnectorEventHandlerFuncs) OnAdd(connectorID, config string) error {
 	if r.AddFunc != nil {
 		return r.AddFunc(connectorID, config)
 	}
@@ -42,7 +42,7 @@ func (r ConnectorHandlerFuncs) OnAdd(connectorID, config string) error {
 }
 
 // OnUpdate calls UpdateFunc if it's not nil.
-func (r ConnectorHandlerFuncs) OnUpdate(connectorID, config string) error {
+func (r ConnectorEventHandlerFuncs) OnUpdate(connectorID, config string) error {
 	if r.UpdateFunc != nil {
 		return r.UpdateFunc(connectorID, config)
 	}
@@ -50,7 +50,7 @@ func (r ConnectorHandlerFuncs) OnUpdate(connectorID, config string) error {
 }
 
 // OnDelete calls DeleteFunc if it's not nil.
-func (r ConnectorHandlerFuncs) OnDelete(connectorID string) error {
+func (r ConnectorEventHandlerFuncs) OnDelete(connectorID string) error {
 	if r.DeleteFunc != nil {
 		return r.DeleteFunc(connectorID)
 	}
