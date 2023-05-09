@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package controller
+package runtime
 
 import (
 	"context"
@@ -21,7 +21,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	log "k8s.io/klog/v2"
@@ -30,83 +29,77 @@ import (
 	vanuslister "github.com/vanus-labs/vanus-connect-runtime/pkg/client/listers/vanus/v1alpha1"
 )
 
-type Controller struct {
+type Runtime interface {
+	Run(ctx context.Context)
+	Lister() vanuslister.ConnectorLister
+}
+
+type runtime struct {
 	connectorsLister     vanuslister.ConnectorLister
 	connectorSynced      cache.InformerSynced
 	addConnectorQueue    workqueue.RateLimitingInterface
 	updateConnectorQueue workqueue.RateLimitingInterface
 	deleteConnectorQueue workqueue.RateLimitingInterface
-
-	informerFactory      informers.SharedInformerFactory
 	vanusInformerFactory vanusinformer.SharedInformerFactory
 
-	sharedInformers informers.SharedInformerFactory
+	handler ConnectorEventHandler
 }
 
-type ResourceType string
-
-var (
-	ResourceConnector ResourceType = "connector"
-)
-
-// NewController creates a new Controller manager
-func NewController() (*Controller, error) {
+// New creates a new connect runtime
+func New(opts ...ConnectorOption) (Runtime, error) {
 	config, err := NewConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	informerFactory := informers.NewSharedInformerFactoryWithOptions(config.KubeFactoryClient, 0,
-		informers.WithTweakListOptions(func(listOption *metav1.ListOptions) {
-			listOption.AllowWatchBookmarks = true
-		}))
+	defaultOpts := defaultConnectorOptions()
+	for _, apply := range opts {
+		apply(&defaultOpts)
+	}
 
 	vanusInformerFactory := vanusinformer.NewSharedInformerFactoryWithOptions(config.VanusFactoryClient, 0,
 		vanusinformer.WithTweakListOptions(func(listOption *metav1.ListOptions) {
 			listOption.AllowWatchBookmarks = true
+			listOption.LabelSelector = defaultOpts.labelSelector
 		}))
 
 	connectorInformer := vanusInformerFactory.Vanus().V1alpha1().Connectors()
-
-	sharedInformers := informers.NewSharedInformerFactory(config.KubeFactoryClient, time.Minute)
-	controller := &Controller{
+	r := &runtime{
 		connectorsLister:     connectorInformer.Lister(),
 		connectorSynced:      connectorInformer.Informer().HasSynced,
 		addConnectorQueue:    workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "AddConnector"),
 		updateConnectorQueue: workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "UpdateConnector"),
 		deleteConnectorQueue: workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "DeleteConnector"),
-		informerFactory:      informerFactory,
 		vanusInformerFactory: vanusInformerFactory,
-		sharedInformers:      sharedInformers,
+		handler:              defaultOpts.handler,
 	}
 
-	// if _, err = connectorInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-	// 	AddFunc:    controller.enqueueAddConnector,
-	// 	UpdateFunc: controller.enqueueUpdateConnector,
-	// 	DeleteFunc: controller.enqueueDeleteConnector,
-	// }); err != nil {
-	// 	log.Errorf("failed to add connector event handler: %+v\n", err)
-	// 	return nil, err
-	// }
+	if _, err = connectorInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    r.enqueueAddConnector,
+		UpdateFunc: r.enqueueUpdateConnector,
+		DeleteFunc: r.enqueueDeleteConnector,
+	}); err != nil {
+		log.Errorf("failed to add connector event handler: %+v\n", err)
+		return nil, err
+	}
 
-	return controller, nil
+	return r, nil
 }
 
-// Run begins controller.
-func (c *Controller) Run(ctx context.Context) {
+// Run begins runtime.
+func (r *runtime) Run(ctx context.Context) {
 	defer utilruntime.HandleCrash()
-	defer c.shutdown()
+	defer r.shutdown()
 
 	log.Info("Starting controller manager")
 	defer log.Info("Shutting down controller manager")
 
 	// Wait for the caches to be synced before starting workers
-	c.informerFactory.Start(ctx.Done())
-	c.vanusInformerFactory.Start(ctx.Done())
+	r.vanusInformerFactory.Start(ctx.Done())
 
 	log.Info("Waiting for informer caches to sync")
 	cacheSyncs := []cache.InformerSynced{
-		c.connectorSynced,
+		r.connectorSynced,
 	}
 
 	if ok := cache.WaitForCacheSync(ctx.Done(), cacheSyncs...); !ok {
@@ -114,25 +107,25 @@ func (c *Controller) Run(ctx context.Context) {
 	}
 
 	// start workers to do all the connectors operations
-	c.startWorkers(ctx)
+	r.startWorkers(ctx)
 	<-ctx.Done()
 	log.Info("Shutting down workers")
 }
 
-func (c *Controller) ControllersLister() vanuslister.ConnectorLister {
-	return c.connectorsLister
+func (r *runtime) Lister() vanuslister.ConnectorLister {
+	return r.connectorsLister
 }
 
-func (c *Controller) startWorkers(ctx context.Context) {
+func (r *runtime) startWorkers(ctx context.Context) {
 	log.Info("Starting workers")
 
-	go wait.Until(c.runAddConnectorWorker, time.Second, ctx.Done())
-	go wait.Until(c.runUpdateConnectorWorker, time.Second, ctx.Done())
-	go wait.Until(c.runDeleteConnectorWorker, time.Second, ctx.Done())
+	go wait.Until(r.runAddConnectorWorker, time.Second, ctx.Done())
+	go wait.Until(r.runUpdateConnectorWorker, time.Second, ctx.Done())
+	go wait.Until(r.runDeleteConnectorWorker, time.Second, ctx.Done())
 }
 
-func (c *Controller) shutdown() {
-	c.addConnectorQueue.ShutDown()
-	c.updateConnectorQueue.ShutDown()
-	c.deleteConnectorQueue.ShutDown()
+func (r *runtime) shutdown() {
+	r.addConnectorQueue.ShutDown()
+	r.updateConnectorQueue.ShutDown()
+	r.deleteConnectorQueue.ShutDown()
 }
